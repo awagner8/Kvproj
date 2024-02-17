@@ -35,7 +35,54 @@
  */
 
 KVPAIR *deserialize(char *buf, size_t buffer_size) {
-    return NULL;
+    KVPAIR *start = NULL;
+    KVPAIR *current = NULL;
+    char *ptr = buf;
+    
+    while (ptr < buf + buffer_size) {
+        // Allocate memory for a new KVPAIR node
+        KVPAIR *new_node = (KVPAIR *)malloc(sizeof(KVPAIR));
+        if (new_node == NULL) {
+            // Memory allocation failed
+            return NULL;
+        }
+        
+        // Copy the key from the buffer
+        memcpy(&(new_node->key), ptr, sizeof(long));
+        ptr += sizeof(long);
+        
+        // Copy the size from the buffer
+        memcpy(&(new_node->size), ptr, sizeof(unsigned int));
+        ptr += sizeof(unsigned int);
+        
+        // Allocate memory for the value string
+        new_node->val = (char *)malloc(new_node->size + 1);
+        if (new_node->val == NULL) {
+            // Memory allocation failed
+            free(new_node);
+            return NULL;
+        }
+        
+        // Copy the value string from the buffer
+        memcpy(new_node->val, ptr, new_node->size);
+        new_node->val[new_node->size] = '\0';
+        ptr += new_node->size;
+        
+        // Add the new node to the linked list
+        if (start == NULL) {
+            start = new_node;
+            current = new_node;
+        } else {
+            current->next = new_node;
+            current = new_node;
+        }
+    }
+    
+    if (start != NULL) {
+        current->next = NULL;
+    }
+    
+    return start;
 }
 
 
@@ -51,6 +98,15 @@ KVPAIR *deserialize(char *buf, size_t buffer_size) {
  */
 
 KVPAIR *lookup(KVPAIR *list, long key) {
+    KVPAIR *current = list;
+    
+    while (current != NULL) {
+        if (current->key == key) {
+            return current;
+        }
+        current = current->next;
+    }
+    
     return NULL;
 }
 
@@ -73,5 +129,26 @@ KVPAIR *lookup(KVPAIR *list, long key) {
  */
 
 int delete(KVPAIR **list, long key) {
+    KVPAIR *curr = *list;
+    KVPAIR *prev = NULL;
+    
+    while (curr != NULL) {
+        if (curr->key == key) {
+            if (prev == NULL) {
+                // The first node is to be deleted
+                *list = curr->next;
+            } else {
+                prev->next = curr->next;
+            }
+            
+            free(curr->val);
+            free(curr);
+            return 1;
+        }
+        
+        prev = curr;
+        curr = curr->next;
+    }
+    
     return 0;
 }
